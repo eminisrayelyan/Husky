@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model photos {
+  id          BigInt   @id @default(autoincrement())
+  storage_key String
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  users       users[]
+}
+
+model users {
+  id                                             BigInt          @id @default(autoincrement())
+  first_name                                     String          @default("")
+  last_name                                      String          @default("")
+  email                                          String          @unique
+  phone_number                                   String?         @unique
+  password_hash                                  String
+  profile_photo_id                               BigInt?
+  created_at                                     DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                                     DateTime        @default(now()) @db.Timestamptz(6)
+  reset_token_hash                               String?
+  reset_token_expires_at                         DateTime?       @db.Timestamptz(6)
+  menu_initialized                               Boolean         @default(false)
+  conversations_conversations_user_one_idTousers conversations[] @relation("conversations_user_one_idTousers")
+  conversations_conversations_user_two_idTousers conversations[] @relation("conversations_user_two_idTousers")
+  menu_items                                     menu_items[]
+  messages                                       messages[]
+  photos                                         photos?         @relation(fields: [profile_photo_id], references: [id], onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model conversations {
+  id                                     BigInt     @id @default(autoincrement())
+  user_one_id                            BigInt
+  user_two_id                            BigInt
+  created_at                             DateTime   @default(now()) @db.Timestamptz(6)
+  users_conversations_user_one_idTousers users      @relation("conversations_user_one_idTousers", fields: [user_one_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_conversations_user_two_idTousers users      @relation("conversations_user_two_idTousers", fields: [user_two_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  messages                               messages[]
+
+  @@unique([user_one_id, user_two_id], map: "conversations_unique_pair")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model messages {
+  id              BigInt        @id @default(autoincrement())
+  conversation_id BigInt
+  sender_id       BigInt
+  body            String
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users         @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model menu_items {
+  id               BigInt       @id @default(autoincrement())
+  user_id          BigInt
+  name             String
+  url              String       @default("")
+  sort_order       Int          @default(0)
+  parent_id        BigInt?
+  users            users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  menu_items       menu_items?  @relation("menu_itemsTomenu_items", fields: [user_id, parent_id], references: [user_id, id], onDelete: Cascade, onUpdate: NoAction)
+  other_menu_items menu_items[] @relation("menu_itemsTomenu_items")
+
+  @@unique([user_id, id])
+  @@index([user_id, parent_id, sort_order], map: "menu_items_user_parent_order_idx")
+}

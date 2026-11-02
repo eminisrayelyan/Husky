@@ -1,0 +1,100 @@
+.form {
+  width: 452px;
+  height: 672px;
+  padding: 60px 63px;
+  background-color: #ffffff;
+  border-radius: 30px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 40px 0 #022e630f;
+}
+
+.form h1 {
+  text-align: center;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.inputs-wrapper {
+  margin-top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-wrapper label {
+  font-size: 14px;
+  letter-spacing: 4%;
+  font-weight: 600;
+  color: #b3b3b3;
+}
+
+.input-wrapper:focus-within label {
+  color: #b14ee0;
+}
+
+.input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #b3b3b3;
+  border-radius: 12px;
+  padding-left: 12px;
+  font-size: 16px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #b14ee0;
+}
+
+.forgot-password {
+  align-self: flex-end;
+  color: #b14ee0;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 4%;
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+
+.btn-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+
+.btn {
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: 12px;
+  background-color: #b14ee0;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 4%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background-color: #9d35d0;
+}
+
+.sign-up {
+  text-decoration: none;
+  text-align: center;
+  color: #000000;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 4%;
+}

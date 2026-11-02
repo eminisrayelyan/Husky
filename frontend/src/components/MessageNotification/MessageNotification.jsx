@@ -1,0 +1,41 @@
+import { useNavigate } from "react-router-dom";
+import styles from "./MessageNotification.module.css";
+
+function MessageNotification({ notification, onClose }) {
+    const navigate = useNavigate();
+
+    if (!notification) {
+        return null;
+    }
+
+    function handleOpenChat() {
+        navigate("/chat");
+        onClose();
+    }
+
+    return (
+        <div className={styles.notification} role="status">
+            <button
+                type="button"
+                className={styles.content}
+                onClick={handleOpenChat}
+            >
+                <span className={styles.icon}>💬</span>
+                <span>
+                    You have a message from {notification.senderName}
+                </span>
+            </button>
+
+            <button
+                type="button"
+                className={styles.close}
+                onClick={onClose}
+                aria-label="Close notification"
+            >
+                ×
+            </button>
+        </div>
+    );
+}
+
+export default MessageNotification;
