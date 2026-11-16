@@ -9,10 +9,31 @@ function SignIn() {
     const [fieldErrors, setFieldErrors] = useState({});
     const [loading, setLoading] = useState(false);
 
+    function handleInputChange(event, field) {
+        const input = event.currentTarget;
+        let isValid = input.value.trim() !== "" && input.validity.valid;
+
+        if (field === "password") {
+            isValid = input.value.length > 0;
+        }
+
+        if (!isValid) {
+            return;
+        }
+
+        setFieldErrors((previousErrors) => {
+            const errors = { ...previousErrors };
+            delete errors[field];
+            return errors;
+        });
+    }
+
     async function handleSubmit(event) {
         event.preventDefault();
 
-        if (loading) return;
+        if (loading) {
+            return;
+        }
 
         const formData = new FormData(event.currentTarget);
 
@@ -77,12 +98,8 @@ function SignIn() {
                         type="email"
                         id="email"
                         name="email"
-                        className={`${styles.input} ${fieldErrors.email ? styles["input-error"] : ""
-                            }`}
-                        aria-invalid={Boolean(fieldErrors.email)}
-                        aria-describedby={
-                            fieldErrors.email ? "email-error" : undefined
-                        }
+                        onChange={(event) => handleInputChange(event, "email")}
+                        className={`${styles.input} ${fieldErrors.email ? styles["input-error"] : ""}`}
                         required
                         autoComplete="username"
                     />
@@ -105,12 +122,8 @@ function SignIn() {
                         type="password"
                         id="password"
                         name="password"
-                        className={`${styles.input} ${fieldErrors.password ? styles["input-error"] : ""
-                            }`}
-                        aria-invalid={Boolean(fieldErrors.password)}
-                        aria-describedby={
-                            fieldErrors.password ? "password-error" : undefined
-                        }
+                        onChange={(event) => handleInputChange(event, "password")}
+                        className={`${styles.input} ${fieldErrors.password ? styles["input-error"] : ""}`}
                         required
                         autoComplete="current-password"
                     />

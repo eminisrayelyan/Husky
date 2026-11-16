@@ -4,6 +4,7 @@ import styles from "./NewPassword.module.css";
 
 function NewPassword() {
     const navigate = useNavigate();
+    
     const [searchParams] = useSearchParams();
 
     const [error, setError] = useState("");

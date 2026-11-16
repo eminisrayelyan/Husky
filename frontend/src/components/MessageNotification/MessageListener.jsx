@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { io } from "socket.io-client";
+import socket from "../../socket.js";
 import MessageNotification from "./MessageNotification.jsx";
 
 function MessageListener() {
@@ -10,26 +10,20 @@ function MessageListener() {
     useEffect(() => {
         const controller = new AbortController();
 
-        const socketUrl = import.meta.env.DEV
-            ? "http://localhost:3000"
-            : window.location.origin;
-
-        const socket = io(socketUrl, {
-            withCredentials: true,
-            autoConnect: false,
-        });
-
         setNotification(null);
 
-        socket.on("new-message", (data) => {
+        function handleNewMessage(data) {
             setNotification({
                 senderName: data.senderName,
             });
-        });
+        }
 
-        socket.on("connect_error", (error) => {
+        function handleConnectError(error) {
             console.error("Notification connection failed:", error.message);
-        });
+        }
+
+        socket.on("new-message", handleNewMessage);
+        socket.on("connect_error", handleConnectError);
 
         async function connectNotifications() {
             try {
@@ -54,8 +48,9 @@ function MessageListener() {
 
         return () => {
             controller.abort();
+            socket.off("new-message", handleNewMessage);
+            socket.off("connect_error", handleConnectError);
             socket.disconnect();
-            socket.removeAllListeners();
         };
     }, [location.pathname]);
 

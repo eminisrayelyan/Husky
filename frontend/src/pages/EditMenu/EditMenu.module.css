@@ -8,6 +8,7 @@
 .panel {
   display: flex;
   height: 90vh;
+  overflow: hidden;
   border-radius: 32px;
   background: #fff;
   box-shadow: 0 4px 30px #0000000d;
@@ -22,13 +23,15 @@
 .menu {
   width: 70%;
   padding: 40px 50px 40px 66px;
+  overflow-y: auto;
 }
 
 .backButton,
 .addButton,
+.cancelButton,
+.editButton,
 .removeButton {
   border: 0;
-  font-family: inherit;
   opacity: 100%;
   text-decoration: none;
 }
@@ -68,11 +71,21 @@
   padding: 0 12px;
   border: 1px solid #c9c9c9;
   border-radius: 13px;
-  background: #fff;
-  font: inherit;
+  background: #ffffff;
+}
+
+.fieldError {
+  margin: 0;
+  color: #b42318;
+  font-size: 14px;
+}
+
+.field input[aria-invalid="true"] {
+  border-color: #b42318;
 }
 
 .addButton {
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -90,6 +103,21 @@
 .addButton span {
   font-size: 21px;
   line-height: 21px;
+}
+
+.cancelButton {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 10px;
+  border-radius: 13px;
+  background: #efefef;
+  color: #707070;
+  cursor: pointer;
+}
+
+.removeButton:disabled {
+  color: #c9c9c9;
+  cursor: not-allowed;
 }
 
 .menuList,
@@ -140,6 +168,14 @@
 .itemName {
   flex-grow: 1;
   overflow-wrap: anywhere;
+}
+
+.editButton {
+  padding: 0;
+  background: transparent;
+  color: #aa47d6;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 .removeButton {

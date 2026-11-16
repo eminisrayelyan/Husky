@@ -172,6 +172,57 @@ async function addMenuItem(userId, { name, url = "" } = {}) {
     return formatMenuItem(item);
 }
 
+async function updateMenuItem(userId, itemId, { name, url = "" } = {}) {
+    if (typeof name !== "string" || !name.trim()) {
+        const error = new Error("Menu name is required");
+        error.status = 400;
+        throw error;
+    }
+
+    if (typeof url !== "string") {
+        const error = new Error("URL must be a string");
+        error.status = 400;
+        throw error;
+    }
+
+    let id;
+
+    try {
+        id = BigInt(itemId);
+
+        if (id <= 0n || id > 9223372036854775807n) {
+            throw new Error();
+        }
+    } catch {
+        const error = new Error("Invalid menu item ID");
+        error.status = 400;
+        throw error;
+    }
+
+    try {
+        const item = await prisma.menu_items.update({
+            where: {
+                id,
+                user_id: BigInt(userId),
+            },
+            data: {
+                name: name.trim(),
+                url: url.trim(),
+            },
+        });
+
+        return formatMenuItem(item);
+    } catch (error) {
+        if (error.code === "P2025") {
+            const notFoundError = new Error("Menu item not found");
+            notFoundError.status = 404;
+            throw notFoundError;
+        }
+
+        throw error;
+    }
+}
+
 async function deleteMenuItem(userId, itemId) {
     let id;
 
@@ -191,10 +242,29 @@ async function deleteMenuItem(userId, itemId) {
         where: {
             id,
             user_id: BigInt(userId),
+            other_menu_items: {
+                none: {},
+            },
         },
     });
 
     if (result.count === 0) {
+        const item = await prisma.menu_items.findFirst({
+            where: {
+                id,
+                user_id: BigInt(userId),
+            },
+            select: { id: true },
+        });
+
+        if (item) {
+            const error = new Error(
+                "Remove child items before removing this item"
+            );
+            error.status = 409;
+            throw error;
+        }
+
         const error = new Error("Menu item not found");
         error.status = 404;
         throw error;
@@ -317,4 +387,4 @@ async function saveMenuOrder(userId, items) {
     return savedItems.map(formatMenuItem);
 }
 
-export { getMenu, addMenuItem, deleteMenuItem, saveMenuOrder };
+export { getMenu, addMenuItem, updateMenuItem, deleteMenuItem, saveMenuOrder };

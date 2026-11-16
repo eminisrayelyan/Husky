@@ -19,6 +19,7 @@ function Profile() {
 
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState("");
+    const [emailError, setEmailError] = useState("");
 
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [photoError, setPhotoError] = useState("");
@@ -82,6 +83,7 @@ function Profile() {
 
     function handleEdit() {
         setSaveError("");
+        setEmailError("");
         setIsEditing(true);
 
         setFormData({
@@ -99,6 +101,21 @@ function Profile() {
             ...previous,
             [name]: value,
         }));
+
+        if (name === "email" && value.trim() && event.target.validity.valid) {
+            setEmailError("");
+        }
+    }
+
+    function handleEmailInvalid(event) {
+        event.preventDefault();
+        setSaveError("");
+
+        if (!event.currentTarget.value.trim()) {
+            setEmailError("Email is required");
+        } else {
+            setEmailError("Enter a valid email address");
+        }
     }
 
     async function handlePhotoChange(event) {
@@ -167,6 +184,7 @@ function Profile() {
 
         setSaving(true);
         setSaveError("");
+        setEmailError("");
 
         try {
             const response = await fetch("/api/users/profile", {
@@ -186,11 +204,20 @@ function Profile() {
             const data = await response.json().catch(() => null);
 
             if (!response.ok) {
-                setSaveError(
-                    data?.message ||
-                    data?.errors?.[0]?.message ||
-                    "Could not update profile"
+                const emailIssue = data?.errors?.find(
+                    (error) => error.field === "email"
                 );
+
+                if (emailIssue) {
+                    setEmailError(emailIssue.message);
+                } else {
+                    setSaveError(
+                        data?.message ||
+                        data?.errors?.[0]?.message ||
+                        "Could not update profile"
+                    );
+                }
+
                 return;
             }
 
@@ -209,6 +236,7 @@ function Profile() {
 
     function handleCancel() {
         setSaveError("");
+        setEmailError("");
         setIsEditing(false);
     }
 
@@ -328,8 +356,20 @@ function Profile() {
                                         autoComplete="email"
                                         value={formData.email}
                                         onChange={handleChange}
+                                        onInvalid={handleEmailInvalid}
+                                        className={emailError ? styles["input-error"] : ""}
                                         required
                                     />
+
+                                    {emailError && (
+                                        <p
+                                            id="profile-email-error"
+                                            className={styles["field-error"]}
+                                            role="alert"
+                                        >
+                                            {emailError}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className={styles["input-field"]}>

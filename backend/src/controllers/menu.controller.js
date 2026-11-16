@@ -1,4 +1,4 @@
-import { getMenu, addMenuItem, deleteMenuItem, saveMenuOrder } from "../services/menu.service.js";
+import { getMenu, addMenuItem, updateMenuItem, deleteMenuItem, saveMenuOrder } from "../services/menu.service.js";
 async function getMenuController(req, res, next) {
     try {
         const items = await getMenu(req.session.userId);
@@ -18,6 +18,23 @@ async function addMenuItemController(req, res, next) {
 
         return res.status(201).json({
             message: "Menu item added successfully",
+            item,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function updateMenuItemController(req, res, next) {
+    try {
+        const item = await updateMenuItem(
+            req.session.userId,
+            req.params.itemId,
+            req.body || {}
+        );
+
+        return res.status(200).json({
+            message: "Menu item updated successfully",
             item,
         });
     } catch (error) {
@@ -56,4 +73,4 @@ async function saveMenuOrderController(req, res, next) {
     }
 }
 
-export { getMenuController, addMenuItemController, deleteMenuItemController, saveMenuOrderController };
+export { getMenuController, addMenuItemController, updateMenuItemController, deleteMenuItemController, saveMenuOrderController };

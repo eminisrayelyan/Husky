@@ -77,9 +77,23 @@ async function updateProfile(userId, { first_name, last_name, email, phone_numbe
         };
     } catch (error) {
         if (error.code === "P2002") {
-            const duplicateError = new Error("Email is already registered");
-            duplicateError.status = 409;
-            throw duplicateError;
+            const target = error.meta?.target;
+
+            const fields = Array.isArray(target)
+                ? target
+                : typeof target === "string"
+                    ? [target]
+                    : [];
+
+            if (fields.includes("email")) {
+                throw new Error("Email is already registered");
+            }
+
+            if (fields.includes("phone_number")) {
+                throw new Error("Phone number is already registered");
+            }
+
+            throw new Error("This value is already registered");
         }
 
         if (error.code === "P2025") {
@@ -103,6 +117,11 @@ async function getUsers(userId) {
             id: true,
             first_name: true,
             last_name: true,
+            photos: {
+                select: {
+                    storage_key: true,
+                },
+            },
         },
         orderBy: [
             { first_name: "asc" },
@@ -110,10 +129,24 @@ async function getUsers(userId) {
         ],
     });
 
-    return users.map((user) => ({
-        ...user,
-        id: user.id.toString(),
-    }));
+    return users.map((user) => {
+        let photoUrl = null;
+
+        if (user.photos) {
+            const { data } = supabase.storage
+                .from("avatars")
+                .getPublicUrl(user.photos.storage_key);
+
+            photoUrl = data.publicUrl;
+        }
+
+        return {
+            id: user.id.toString(),
+            first_name: user.first_name,
+            last_name: user.last_name,
+            photo_url: photoUrl,
+        };
+    });
 }
 
 export { getProfile, updateProfile, getUsers };

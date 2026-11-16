@@ -19,14 +19,13 @@ function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/new-password" element={<NewPassword />} />
-          <Route path="*" element={<h1>404 - Page Not Found</h1>} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/menu/edit" element={<EditMenu />} />
           <Route path="/chat" element={<Chat />} />
+          <Route path="/menu/edit" element={<EditMenu />} />
+          <Route path="*" element={<h1>404 - Page Not Found</h1>} />
         </Routes>
       </BrowserRouter>
     </>
-
   );
 }
 

@@ -31,6 +31,7 @@ function MenuList({
     onDragStart,
     onDragEnd,
     onMove,
+    onEdit,
     onRemove,
 }) {
     const currentItems = items.filter(
@@ -84,53 +85,67 @@ function MenuList({
                     : styles.childList
             }
         >
-            {currentItems.map((item, index) => (
-                <li key={item.id}>
-                    <div
-                        className={styles.dropSpace}
-                        onDragOver={allowDrop}
-                        onDrop={(event) =>
-                            dropBetween(event, item.id)
-                        }
-                    />
+            {currentItems.map((item, index) => {
+                const hasChildren = items.some(
+                    (child) => child.parentId === item.id
+                );
 
-                    <div
-                        className={styles.row}
-                        onDragOver={allowDrop}
-                        onDrop={(event) =>
-                            dropOnItem(event, item, index)
-                        }
-                    >
-                        <span
-                            className={styles.handle}
-                            draggable={!disabled}
-                            title="Drag to move"
-                            onDragStart={(event) =>
-                                onDragStart(event, item.id)
+                return (
+                    <li key={item.id}>
+                        <div
+                            className={styles.dropSpace}
+                            onDragOver={allowDrop}
+                            onDrop={(event) =>
+                                dropBetween(event, item.id)
                             }
-                            onDragEnd={onDragEnd}
+                        />
+
+                        <div
+                            className={styles.row}
+                            onDragOver={allowDrop}
+                            onDrop={(event) =>
+                                dropOnItem(event, item, index)
+                            }
                         >
-                            ☰
-                        </span>
+                            <span
+                                className={styles.handle}
+                                draggable={!disabled}
+                                title="Drag to move"
+                                onDragStart={(event) =>
+                                    onDragStart(event, item.id)
+                                }
+                                onDragEnd={onDragEnd}
+                            >
+                                ☰
+                            </span>
 
-                        <span className={styles.itemName}>
-                            {item.name}
-                        </span>
+                            <span className={styles.itemName}>
+                                {item.name}
+                            </span>
 
-                        <button
-                            type="button"
-                            className={styles.removeButton}
-                            aria-label={`Remove ${item.name}`}
-                            disabled={disabled}
-                            onClick={() => onRemove(item.id)}
-                        >
-                            ×
-                        </button>
-                    </div>
+                            <button
+                                type="button"
+                                className={styles.editButton}
+                                aria-label={`Edit ${item.name}`}
+                                disabled={disabled}
+                                onClick={() => onEdit(item)}
+                            >
+                                Edit
+                            </button>
 
-                    {items.some(
-                        (child) => child.parentId === item.id
-                    ) && (
+                            <button
+                                type="button"
+                                className={styles.removeButton}
+                                aria-label={`Remove ${item.name}`}
+                                disabled={disabled || hasChildren}
+                                title={hasChildren ? "Remove child items first" : undefined}
+                                onClick={() => onRemove(item.id)}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {hasChildren && (
                             <MenuList
                                 items={items}
                                 parentId={item.id}
@@ -138,11 +153,13 @@ function MenuList({
                                 onDragStart={onDragStart}
                                 onDragEnd={onDragEnd}
                                 onMove={onMove}
+                                onEdit={onEdit}
                                 onRemove={onRemove}
                             />
                         )}
-                </li>
-            ))}
+                    </li>
+                );
+            })}
 
             <li
                 className={styles.dropSpace}
@@ -158,16 +175,19 @@ function EditMenu() {
 
     const [menuItems, setMenuItems] = useState([]);
     const [name, setName] = useState("");
+    const [nameError, setNameError] = useState("");
     const [url, setUrl] = useState("");
+    const [editingId, setEditingId] = useState(null);
     const [draggedId, setDraggedId] = useState(null);
 
     const [loading, setLoading] = useState(true);
-    const [adding, setAdding] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [savingOrder, setSavingOrder] = useState(false);
     const [error, setError] = useState("");
 
-    const busy = loading || adding || deleting || savingOrder;
+    const busy = loading || saving || deleting || savingOrder;
+    const submitLabel = editingId ? "Save" : "Add";
 
     useEffect(() => {
         const controller = new AbortController();
@@ -209,17 +229,44 @@ function EditMenu() {
         return () => controller.abort();
     }, [navigate]);
 
-    async function handleAdd(event) {
+    function handleEdit(item) {
+        if (busy) return;
+
+        setEditingId(item.id);
+        setName(item.name);
+        setUrl(item.url);
+        setNameError("");
+        setError("");
+    }
+
+    function resetForm() {
+        setEditingId(null);
+        setName("");
+        setUrl("");
+        setNameError("");
+        setError("");
+    }
+
+    async function handleSubmit(event) {
         event.preventDefault();
 
-        if (busy || !name.trim()) return;
+        if (busy) return;
 
-        setAdding(true);
+        if (!name.trim()) {
+            setNameError("Name is required");
+            return;
+        }
+
+        setNameError("");
+
+        setSaving(true);
         setError("");
 
         try {
-            const response = await fetch("/api/menu", {
-                method: "POST",
+            const endpoint = editingId ? `/api/menu/${editingId}` : "/api/menu";
+
+            const response = await fetch(endpoint, {
+                method: editingId ? "PATCH" : "POST",
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
@@ -239,21 +286,27 @@ function EditMenu() {
 
             if (!response.ok) {
                 throw new Error(
-                    data.message || "Could not add menu item"
+                    data.message || "Could not save menu item"
                 );
             }
 
-            setMenuItems((previous) => [
-                ...previous,
-                formatItem(data.item),
-            ]);
+            const savedItem = formatItem(data.item);
 
-            setName("");
-            setUrl("");
+            if (editingId) {
+                setMenuItems((previous) =>
+                    previous.map((item) =>
+                        item.id === editingId ? savedItem : item
+                    )
+                );
+            } else {
+                setMenuItems((previous) => [...previous, savedItem]);
+            }
+
+            resetForm();
         } catch (error) {
             setError(error.message);
         } finally {
-            setAdding(false);
+            setSaving(false);
         }
     }
 
@@ -282,9 +335,13 @@ function EditMenu() {
                 );
             }
 
+            if (editingId === itemId) {
+                resetForm();
+            }
+
             setMenuItems((previous) =>
                 previous.filter(
-                    (item) => !isInside(previous, item.id, itemId)
+                    (item) => item.id !== itemId
                 )
             );
         } catch (error) {
@@ -388,7 +445,8 @@ function EditMenu() {
             <div className={styles.panel}>
                 <form
                     className={styles.sidebar}
-                    onSubmit={handleAdd}
+                    onSubmit={handleSubmit}
+                    noValidate
                 >
                     <Link
                         to="/profile"
@@ -406,11 +464,22 @@ function EditMenu() {
                             type="text"
                             value={name}
                             disabled={busy}
-                            onChange={(event) =>
-                                setName(event.target.value)
-                            }
+                            onChange={(event) => {
+                                setName(event.target.value);
+                                if (event.target.value.trim()) {
+                                    setNameError("");
+                                }
+                            }}
+                            aria-invalid={Boolean(nameError)}
+                            aria-describedby={nameError ? "menu-name-error" : undefined}
                             required
                         />
+
+                        {nameError && (
+                            <p id="menu-name-error" className={styles.fieldError} role="alert">
+                                {nameError}
+                            </p>
+                        )}
                     </div>
 
                     <div className={styles.field}>
@@ -430,11 +499,22 @@ function EditMenu() {
                     <button
                         type="submit"
                         className={styles.addButton}
-                        disabled={busy || !name.trim()}
+                        disabled={busy}
                     >
-                        {adding ? "Adding..." : "Add"}
+                        {saving ? "Saving..." : submitLabel}
                         <span aria-hidden="true">›</span>
                     </button>
+
+                    {editingId && (
+                        <button
+                            type="button"
+                            className={styles.cancelButton}
+                            disabled={busy}
+                            onClick={resetForm}
+                        >
+                            Cancel
+                        </button>
+                    )}
                 </form>
 
                 <section
@@ -453,6 +533,7 @@ function EditMenu() {
                         onDragStart={handleDragStart}
                         onDragEnd={() => setDraggedId(null)}
                         onMove={handleMove}
+                        onEdit={handleEdit}
                         onRemove={handleRemove}
                     />
                 </section>

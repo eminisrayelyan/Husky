@@ -4,7 +4,16 @@ import styles from "./ForgotPassword.module.css";
 
 function ForgotPassword() {
     const [message, setMessage] = useState("");
+    const [emailError, setEmailError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    function handleInputChange(event) {
+        const input = event.currentTarget;
+
+        if (input.value.trim() !== "" && input.validity.valid) {
+            setEmailError("");
+        }
+    }
 
     async function handleSubmit(event) {
         event.preventDefault();
@@ -13,10 +22,23 @@ function ForgotPassword() {
             return;
         }
 
-        const formData = new FormData(event.currentTarget);
+        const form = event.currentTarget;
+        const formData = new FormData(form);
         const email = formData.get("email");
 
         setMessage("");
+        setEmailError("");
+
+        if (!email.trim()) {
+            setEmailError("Email is required");
+            return;
+        }
+
+        if (!form.elements.email.validity.valid) {
+            setEmailError("Enter a valid email address");
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -31,11 +53,18 @@ function ForgotPassword() {
             const data = await response.json().catch(() => null);
 
             if (!response.ok) {
-                setMessage(
-                    data?.message ||
-                    data?.errors?.[0]?.message ||
-                    "Could not send reset email"
-                );
+                const emailIssue = data?.errors?.find((issue) => issue.field === "email");
+
+                if (emailIssue) {
+                    setEmailError(emailIssue.message);
+                } else {
+                    setMessage(
+                        data?.message ||
+                        data?.errors?.[0]?.message ||
+                        "Could not send reset email"
+                    );
+                }
+
                 return;
             }
 
@@ -48,7 +77,7 @@ function ForgotPassword() {
     }
 
     return (
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form className={styles.form} onSubmit={handleSubmit} noValidate>
             <h1>FORGOT PASSWORD</h1>
 
             <div className={styles["inputs-wrapper"]}>
@@ -59,9 +88,22 @@ function ForgotPassword() {
                         id="email"
                         name="email"
                         autoComplete="email"
-                        className={styles.input}
+                        onChange={handleInputChange}
+                        className={`${styles.input} ${emailError ? styles["input-error"] : ""}`}
+                        aria-invalid={Boolean(emailError)}
+                        aria-describedby={emailError ? "email-error" : undefined}
                         required
                     />
+
+                    {emailError && (
+                        <p
+                            id="email-error"
+                            className={styles["field-error"]}
+                            role="alert"
+                        >
+                            {emailError}
+                        </p>
+                    )}
                 </div>
             </div>
 

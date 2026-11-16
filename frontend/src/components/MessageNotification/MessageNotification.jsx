@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import styles from "./MessageNotification.module.css";
+import icon from "../../assets/vector.png";
 
 function MessageNotification({ notification, onClose }) {
     const navigate = useNavigate();
@@ -20,7 +21,7 @@ function MessageNotification({ notification, onClose }) {
                 className={styles.content}
                 onClick={handleOpenChat}
             >
-                <span className={styles.icon}>💬</span>
+                <img src={icon} alt="chat" className={styles.icon} />
                 <span>
                     You have a message from {notification.senderName}
                 </span>

@@ -94,7 +94,7 @@ function Header() {
 
     return (
         <header className={styles.header}>
-            <nav className={styles.nav} aria-label="Main navigation">
+            <nav className={styles.nav}>
                 <ul className={styles["nav-list"]}>
                     {loading && <li>Loading menu...</li>}
                     {error && <li role="alert">{error}</li>}

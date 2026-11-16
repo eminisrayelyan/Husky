@@ -1,7 +1,7 @@
 .form {
   width: 452px;
   height: 672px;
-  padding: 60px 63px;
+  padding: 60px 60px 110px 60px;
   background-color: #ffffff;
   border-radius: 30px;
   display: flex;
@@ -97,4 +97,14 @@
   font-size: 16px;
   font-weight: 800;
   letter-spacing: 4%;
+}
+
+.input-error,
+.input-error:focus {
+  border-color: #c62828;
+}
+
+.field-error {
+  color: #c62828;
+  font-size: 12px;
 }

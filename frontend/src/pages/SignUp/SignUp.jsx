@@ -4,15 +4,45 @@ import styles from "./SignUp.module.css";
 
 function SignUp() {
   const navigate = useNavigate();
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState({});
 
+  function handleInputChange(event, field) {
+    const input = event.currentTarget;
+    const password = input.form.elements.password.value;
+    const confirmPassword = input.form.elements["confirm-password"].value;
+    let isValid = input.value.trim() !== "" && input.validity.valid;
+
+    if (field === "password") {
+      isValid = input.value.length >= 8;
+    } else if (field === "confirmPassword") {
+      isValid = input.value !== "" && input.value === password;
+    }
+
+    setFieldErrors((previousErrors) => {
+      const errors = { ...previousErrors };
+
+      if (isValid) {
+        delete errors[field];
+      }
+
+      if (field === "password" && confirmPassword && password === confirmPassword) {
+        delete errors.confirmPassword;
+      }
+
+      return errors;
+    });
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (loading) return;
+    if (loading) {
+      return;
+    }
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -54,7 +84,9 @@ function SignUp() {
     setError("");
     setFieldErrors(errors);
 
-    if (Object.keys(errors).length > 0) return;
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
 
     setLoading(true);
 
@@ -114,17 +146,14 @@ function SignUp() {
             id="first-name"
             name="first-name"
             autoComplete="given-name"
-            className={`${styles.input} ${fieldErrors.first_name ? styles["input-error"] : ""
-              }`}
-            aria-invalid={Boolean(fieldErrors.first_name)}
-            aria-describedby="first-name-error"
+            onChange={(event) => handleInputChange(event, "first_name")}
+            className={`${styles.input} ${fieldErrors.first_name ? styles["input-error"] : ""}`}
             required
           />
 
           <p
             id="first-name-error"
             className={styles["field-error"]}
-            aria-live="polite"
           >
             {fieldErrors.first_name}
           </p>
@@ -138,17 +167,14 @@ function SignUp() {
             id="last-name"
             name="last-name"
             autoComplete="family-name"
-            className={`${styles.input} ${fieldErrors.last_name ? styles["input-error"] : ""
-              }`}
-            aria-invalid={Boolean(fieldErrors.last_name)}
-            aria-describedby="last-name-error"
+            onChange={(event) => handleInputChange(event, "last_name")}
+            className={`${styles.input} ${fieldErrors.last_name ? styles["input-error"] : ""}`}
             required
           />
 
           <p
             id="last-name-error"
             className={styles["field-error"]}
-            aria-live="polite"
           >
             {fieldErrors.last_name}
           </p>
@@ -162,17 +188,14 @@ function SignUp() {
             id="email"
             name="email"
             autoComplete="email"
-            className={`${styles.input} ${fieldErrors.email ? styles["input-error"] : ""
-              }`}
-            aria-invalid={Boolean(fieldErrors.email)}
-            aria-describedby="email-error"
+            onChange={(event) => handleInputChange(event, "email")}
+            className={`${styles.input} ${fieldErrors.email ? styles["input-error"] : ""}`}
             required
           />
 
           <p
             id="email-error"
             className={styles["field-error"]}
-            aria-live="polite"
           >
             {fieldErrors.email}
           </p>
@@ -186,10 +209,8 @@ function SignUp() {
             id="password"
             name="password"
             autoComplete="new-password"
-            className={`${styles.input} ${fieldErrors.password ? styles["input-error"] : ""
-              }`}
-            aria-invalid={Boolean(fieldErrors.password)}
-            aria-describedby="password-error"
+            onChange={(event) => handleInputChange(event, "password")}
+            className={`${styles.input} ${fieldErrors.password ? styles["input-error"] : ""}`}
             minLength={8}
             required
           />
@@ -197,7 +218,6 @@ function SignUp() {
           <p
             id="password-error"
             className={styles["field-error"]}
-            aria-live="polite"
           >
             {fieldErrors.password}
           </p>
@@ -211,10 +231,8 @@ function SignUp() {
             id="confirm-password"
             name="confirm-password"
             autoComplete="new-password"
-            className={`${styles.input} ${fieldErrors.confirmPassword ? styles["input-error"] : ""
-              }`}
-            aria-invalid={Boolean(fieldErrors.confirmPassword)}
-            aria-describedby="confirm-password-error"
+            onChange={(event) => handleInputChange(event, "confirmPassword")}
+            className={`${styles.input} ${fieldErrors.confirmPassword ? styles["input-error"] : ""}`}
             minLength={8}
             required
           />
@@ -222,7 +240,6 @@ function SignUp() {
           <p
             id="confirm-password-error"
             className={styles["field-error"]}
-            aria-live="polite"
           >
             {fieldErrors.confirmPassword}
           </p>

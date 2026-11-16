@@ -7,7 +7,7 @@ function errorHandler(error, req, res, next) {
 
     res.status(status).json({
         message: status >= 500
-            ? "Something went wrong. Please try again later."
+            ? "Something went wrong. Please try again."
             : error.message,
     });
 }

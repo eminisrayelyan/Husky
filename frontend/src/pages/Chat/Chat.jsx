@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header/Header.jsx";
+import socket from "../../socket.js";
 import styles from "./Chat.module.css";
 import searchIcon from "../../assets/search.png";
 
@@ -25,6 +26,7 @@ function Avatar({ user }) {
 
 function Chat() {
     const navigate = useNavigate();
+    const threadRef = useRef(null);
 
     const [currentUser, setCurrentUser] = useState(null);
     const [users, setUsers] = useState([]);
@@ -41,6 +43,39 @@ function Chat() {
     const [loading, setLoading] = useState(true);
     const [opening, setOpening] = useState(false);
     const [sending, setSending] = useState(false);
+
+    useEffect(() => {
+        const thread = threadRef.current;
+
+        if (thread) {
+            thread.scrollTop = thread.scrollHeight;
+        }
+    }, [messages]);
+
+    useEffect(() => {
+        function handleNewMessage(data) {
+            const newMessage = data.message;
+
+            setLastMessages((previous) => ({
+                ...previous,
+                [newMessage.sender_id]: newMessage.body,
+            }));
+
+            if (newMessage.conversation_id !== conversationId) return;
+
+            setMessages((previous) => {
+                if (previous.some((item) => item.id === newMessage.id)) {
+                    return previous;
+                }
+
+                return [...previous, newMessage];
+            });
+        }
+
+        socket.on("new-message", handleNewMessage);
+
+        return () => socket.off("new-message", handleNewMessage);
+    }, [conversationId]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -110,7 +145,7 @@ function Chat() {
 
                 setCurrentUser(profileData.user);
                 setUsers(usersData.users);
-                setLastMessages(previews);
+                setLastMessages((previous) => ({ ...previews, ...previous }));
             } catch (error) {
                 if (!controller.signal.aborted) {
                     setError(error.message);
@@ -129,6 +164,8 @@ function Chat() {
 
     async function handleSelectUser(user) {
         if (opening || sending) return;
+
+        const previewBeforeLoading = lastMessages[user.id];
 
         setOpening(true);
         setError("");
@@ -161,6 +198,8 @@ function Chat() {
             const data = await response.json();
             const id = data.conversation.id;
 
+            setConversationId(id);
+
             const messagesResponse = await fetch(
                 `/api/conversations/${id}/messages`,
                 {
@@ -179,17 +218,31 @@ function Chat() {
 
             const messagesData = await messagesResponse.json();
 
-            setConversationId(id);
-            setMessages(messagesData.messages);
+            setMessages((previous) => {
+                const newMessages = previous.filter(
+                    (item) => !messagesData.messages.some(
+                        (savedItem) => savedItem.id === item.id
+                    )
+                );
+
+                return [...messagesData.messages, ...newMessages];
+            });
 
             const lastMessage =
                 messagesData.messages[messagesData.messages.length - 1];
 
-            setLastMessages((previous) => ({
-                ...previous,
-                [user.id]: lastMessage?.body || "",
-            }));
+            setLastMessages((previous) => {
+                if (previous[user.id] !== previewBeforeLoading) {
+                    return previous;
+                }
+
+                return {
+                    ...previous,
+                    [user.id]: lastMessage?.body || "",
+                };
+            });
         } catch (error) {
+            setConversationId(null);
             setError(error.message);
         } finally {
             setOpening(false);
@@ -284,7 +337,6 @@ function Chat() {
                         <div className={styles.search}>
                             <input
                                 type="search"
-                                aria-label="Search users"
                                 placeholder="Search"
                                 value={search}
                                 onChange={(event) =>
@@ -312,7 +364,6 @@ function Chat() {
                                     }
                                     role="button"
                                     tabIndex={0}
-                                    aria-disabled={opening || sending}
                                     onClick={() => handleSelectUser(user)}
                                     onKeyDown={(event) => {
                                         if (
@@ -364,7 +415,7 @@ function Chat() {
                                     </h2>
                                 </header>
 
-                                <ul className={styles.thread}>
+                                <ul className={styles.thread} ref={threadRef}>
                                     {opening && (
                                         <li>Loading messages...</li>
                                     )}
@@ -415,7 +466,6 @@ function Chat() {
                                     <div className={styles.composerRow}>
                                         <input
                                             type="text"
-                                            aria-label="Message"
                                             placeholder="Type something..."
                                             maxLength={2000}
                                             value={message}

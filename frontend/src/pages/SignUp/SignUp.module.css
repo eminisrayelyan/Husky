@@ -3,7 +3,7 @@
   margin-bottom: 74px;
   width: 452px;
   min-height: 878px;
-  padding: 60px 63px;
+  padding: 60px 60px;
   background-color: #ffffff;
   border-radius: 30px;
   display: flex;
@@ -109,6 +109,4 @@
 .field-error {
   color: #c62828;
   font-size: 12px;
-  line-height: 18px;
-  overflow-wrap: anywhere;
 }
