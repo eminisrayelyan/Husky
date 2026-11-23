@@ -44,7 +44,7 @@ async function uploadProfilePhoto(userId, file) {
     }
 
     if (imageBuffer.length > 2 * 1024 * 1024) {
-        const error = new Error("Photo must be 2 MB or smaller");
+        const error = new Error("Photo must be 2MB or smaller");
         error.status = 413;
         throw error;
     }

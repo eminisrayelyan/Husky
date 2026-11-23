@@ -135,8 +135,8 @@ function Profile() {
             return;
         }
 
-        if (file.size > 2 * 1000 * 1000) {
-            setPhotoError("Photo must be 2 MB or smaller.");
+        if (file.size > 2 * 1024 * 1024) {
+            setPhotoError("Photo must be 2MB or smaller");
             return;
         }
 
@@ -314,7 +314,12 @@ function Profile() {
                         </div>
 
                         {uploadingPhoto && <p>Uploading photo...</p>}
-                        {photoError && <p role="alert">{photoError}</p>}
+                        {photoError && (
+                            <p className={styles["photo-error"]} role="alert">
+                                <span className={styles["error-icon"]}>!</span>
+                                {photoError}
+                            </p>
+                        )}
 
                         {isEditing ? (
                             <form
@@ -330,6 +335,7 @@ function Profile() {
                                         autoComplete="given-name"
                                         value={formData.first_name}
                                         onChange={handleChange}
+                                        disabled={saving}
                                         required
                                     />
                                 </div>
@@ -343,6 +349,7 @@ function Profile() {
                                         autoComplete="last-name"
                                         value={formData.last_name}
                                         onChange={handleChange}
+                                        disabled={saving}
                                         required
                                     />
                                 </div>
@@ -356,6 +363,7 @@ function Profile() {
                                         autoComplete="email"
                                         value={formData.email}
                                         onChange={handleChange}
+                                        disabled={saving}
                                         onInvalid={handleEmailInvalid}
                                         className={emailError ? styles["input-error"] : ""}
                                         required
@@ -381,6 +389,7 @@ function Profile() {
                                         autoComplete="tel"
                                         value={formData.phone_number}
                                         onChange={handleChange}
+                                        disabled={saving}
                                     />
                                 </div>
                                 {saveError && <p role="alert">{saveError}</p>}

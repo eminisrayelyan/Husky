@@ -31,7 +31,7 @@ function uploadPhoto(req, res, next) {
         if (error) {
             if (error.code === "LIMIT_FILE_SIZE") {
                 return res.status(413).json({
-                    message: "Photo must be 2 MB or smaller",
+                    message: "Photo must be 2MB or smaller",
                 });
             }
 

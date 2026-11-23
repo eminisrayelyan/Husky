@@ -51,7 +51,9 @@ function MenuList({
         event.preventDefault();
         event.stopPropagation();
 
-        if (disabled) return;
+        if (disabled) {
+            return;
+        }
 
         onMove(parentId, beforeId);
     }
@@ -60,7 +62,9 @@ function MenuList({
         event.preventDefault();
         event.stopPropagation();
 
-        if (disabled) return;
+        if (disabled) {
+            return;
+        }
 
         const row = event.currentTarget.getBoundingClientRect();
         const mouseX = event.clientX - row.left;

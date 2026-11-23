@@ -41,6 +41,7 @@ function SignIn() {
             email: formData.get("email"),
             password: formData.get("password"),
         };
+
         const errors = {};
 
         if (!data.email.trim()) {

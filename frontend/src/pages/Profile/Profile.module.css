@@ -156,6 +156,28 @@
   font-size: 12px;
 }
 
+.photo-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: #c62828;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.error-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #c62828;
+  border-radius: 50%;
+  font-weight: 800;
+}
+
 .edit-buttons {
   display: flex;
   gap: 16px;
