@@ -35,10 +35,31 @@ function SignIn() {
             return;
         }
 
-        const formData = new FormData(event.currentTarget);
+        const form = event.currentTarget;
+        const formData = new FormData(form);
+        const data = {
+            email: formData.get("email"),
+            password: formData.get("password"),
+        };
+        const errors = {};
+
+        if (!data.email.trim()) {
+            errors.email = "Email is required";
+        } else if (!form.elements.email.validity.valid) {
+            errors.email = "Enter a valid email address";
+        }
+
+        if (!data.password) {
+            errors.password = "Password is required";
+        }
 
         setMessage("");
-        setFieldErrors({});
+        setFieldErrors(errors);
+
+        if (Object.keys(errors).length > 0) {
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -47,10 +68,7 @@ function SignIn() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    email: formData.get("email"),
-                    password: formData.get("password"),
-                }),
+                body: JSON.stringify(data),
             });
 
             const result = await response.json().catch(() => null);
