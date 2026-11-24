@@ -8,9 +8,13 @@ function MessageListener() {
     const [notification, setNotification] = useState(null);
 
     useEffect(() => {
-        const controller = new AbortController();
-
         setNotification(null);
+
+        const privatePage = ["/profile", "/chat", "/menu/edit"].includes(location.pathname);
+
+        if (!privatePage) {
+            return;
+        }
 
         function handleNewMessage(data) {
             setNotification({
@@ -25,29 +29,9 @@ function MessageListener() {
         socket.on("new-message", handleNewMessage);
         socket.on("connect_error", handleConnectError);
 
-        async function connectNotifications() {
-            try {
-                const response = await fetch("/api/users/profile", {
-                    credentials: "include",
-                    signal: controller.signal,
-                });
-
-                if (!response.ok || controller.signal.aborted) {
-                    return;
-                }
-
-                socket.connect();
-            } catch (error) {
-                if (!controller.signal.aborted) {
-                    console.error("Could not connect notifications:", error);
-                }
-            }
-        }
-
-        connectNotifications();
+        socket.connect();
 
         return () => {
-            controller.abort();
             socket.off("new-message", handleNewMessage);
             socket.off("connect_error", handleConnectError);
             socket.disconnect();

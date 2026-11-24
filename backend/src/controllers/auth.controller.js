@@ -1,4 +1,5 @@
 import { signUp, signIn, forgotPassword, resetPassword } from "../services/auth.service.js";
+import { getMenu } from "../services/menu.service.js";
 
 async function signUpController(req, res, next) {
     try {
@@ -19,6 +20,7 @@ async function signUpController(req, res, next) {
 async function signInController(req, res, next) {
     try {
         const user = await signIn(res.locals.signInData);
+        const menuItems = await getMenu(user.id);
 
         req.session.regenerate((error) => {
             if (error) {
@@ -37,6 +39,7 @@ async function signInController(req, res, next) {
                 res.status(200).json({
                     message: "Signed in successfully",
                     user,
+                    menuItems,
                 });
             });
         });

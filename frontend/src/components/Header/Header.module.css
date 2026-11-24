@@ -30,6 +30,7 @@
 .menuButton {
   border: none;
   background: none;
+  font-family: inherit;
   text-align: left;
   cursor: pointer;
 }

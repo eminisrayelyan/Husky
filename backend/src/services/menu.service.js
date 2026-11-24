@@ -47,19 +47,28 @@ function formatMenuItem(item) {
 async function getMenu(userId) {
     const id = BigInt(userId);
 
+    const user = await prisma.users.findUnique({
+        where: { id },
+        select: { menu_initialized: true },
+    });
+
+    if (!user) {
+        const error = new Error("User not found");
+        error.status = 404;
+        throw error;
+    }
+
+    if (user.menu_initialized) {
+        const items = await prisma.menu_items.findMany({
+            where: { user_id: id },
+            orderBy: [{ sort_order: "asc" }, { id: "asc" }],
+        });
+
+        return items.map(formatMenuItem);
+    }
+
     const items = await prisma.$transaction(
         async (tx) => {
-            const user = await tx.users.findUnique({
-                where: { id },
-                select: { id: true },
-            });
-
-            if (!user) {
-                const error = new Error("User not found");
-                error.status = 404;
-                throw error;
-            }
-
             const result = await tx.users.updateMany({
                 where: {
                     id,

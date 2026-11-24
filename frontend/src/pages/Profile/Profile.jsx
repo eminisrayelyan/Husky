@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../../components/Header/Header.jsx";
 import styles from "./Profile.module.css";
 import frame from "../../assets/frame.png";
@@ -8,11 +8,14 @@ import ImageCropper from "./ImageCropper.jsx";
 
 function Profile() {
     const navigate = useNavigate();
+    const location = useLocation();
 
-    const [user, setUser] = useState(null);
+    const [signInUser] = useState(location.state?.user || null);
+    const [signInMenu] = useState(location.state?.menuItems ?? null);
+    const [user, setUser] = useState(signInUser);
 
     const [isEditing, setIsEditing] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!signInUser);
     const [error, setError] = useState("");
 
     const [signingOut, setSigningOut] = useState(false);
@@ -36,6 +39,11 @@ function Profile() {
     });
 
     useEffect(() => {
+        if (signInUser) {
+            navigate("/profile", { replace: true, state: null });
+            return;
+        }
+
         const controller = new AbortController();
 
         async function loadProfile() {
@@ -81,7 +89,7 @@ function Profile() {
         loadProfile();
 
         return () => controller.abort();
-    }, []);
+    }, [navigate, signInUser]);
 
     function handleEdit() {
         setSaveError("");
@@ -293,7 +301,7 @@ function Profile() {
 
     return (
         <div className={styles.page}>
-            <Header></Header>
+            <Header initialItems={signInMenu} />
 
             <main className={styles.main}>
                 <section className={styles.card}>

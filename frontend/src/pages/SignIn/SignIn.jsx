@@ -93,7 +93,9 @@ function SignIn() {
             }
 
             setMessage("Signed in successfully");
-            navigate("/profile");
+            navigate("/profile", {
+                state: { user: result.user, menuItems: result.menuItems },
+            });
         } catch {
             setMessage("Could not connect to the server");
         } finally {

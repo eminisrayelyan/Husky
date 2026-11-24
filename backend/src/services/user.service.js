@@ -1,6 +1,26 @@
 import prisma from "../db/prisma.js";
 import supabase from "../db/supabase.js";
 
+function formatProfile(user) {
+    let photoUrl = null;
+
+    if (user.photos) {
+        const { data } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(user.photos.storage_key);
+        photoUrl = data.publicUrl;
+    }
+
+    return {
+        id: user.id.toString(),
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        phone_number: user.phone_number,
+        photo_url: photoUrl,
+    };
+}
+
 async function getProfile(userId) {
     const user = await prisma.users.findUnique({
         where: {
@@ -12,7 +32,7 @@ async function getProfile(userId) {
             last_name: true,
             email: true,
             phone_number: true,
-            profile_photo_id: true,
+            photos: { select: { storage_key: true } },
         },
     });
 
@@ -22,32 +42,7 @@ async function getProfile(userId) {
         throw error;
     }
 
-    let photoUrl = null;
-
-    if (user.profile_photo_id !== null) {
-        const photo = await prisma.photos.findUnique({
-            where: {
-                id: user.profile_photo_id,
-            },
-        });
-
-        if (photo) {
-            const { data } = supabase.storage
-                .from("avatars")
-                .getPublicUrl(photo.storage_key);
-
-            photoUrl = data.publicUrl;
-        }
-    }
-
-    return {
-        id: user.id.toString(),
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        phone_number: user.phone_number,
-        photo_url: photoUrl,
-    };
+    return formatProfile(user);
 }
 
 async function updateProfile(userId, { first_name, last_name, email, phone_number }) {
@@ -149,4 +144,4 @@ async function getUsers(userId) {
     });
 }
 
-export { getProfile, updateProfile, getUsers };
+export { getProfile, updateProfile, getUsers, formatProfile };

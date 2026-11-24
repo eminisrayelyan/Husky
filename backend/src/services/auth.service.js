@@ -2,6 +2,7 @@ import prisma from "../db/prisma.js";
 import argon2 from "argon2";
 import crypto from "crypto";
 import { sendResetPasswordEmail } from "./email.service.js";
+import { formatProfile } from "./user.service.js";
 
 async function signUp({ first_name, last_name, email, password }) {
     const existingUser = await prisma.users.findUnique({
@@ -47,6 +48,7 @@ async function signUp({ first_name, last_name, email, password }) {
 async function signIn({ email, password }) {
     const user = await prisma.users.findUnique({
         where: { email },
+        include: { photos: { select: { storage_key: true } } },
     });
 
     if (!user) {
@@ -63,12 +65,7 @@ async function signIn({ email, password }) {
         throw error;
     }
 
-    return {
-        id: user.id.toString(),
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-    };
+    return formatProfile(user);
 }
 
 async function forgotPassword({ email }) {

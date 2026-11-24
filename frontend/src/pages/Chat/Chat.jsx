@@ -82,12 +82,18 @@ function Chat() {
 
         async function loadChat() {
             try {
-                const profileResponse = await fetch("/api/users/profile", {
+                const options = {
                     credentials: "include",
                     signal: controller.signal,
-                });
+                };
 
-                if (profileResponse.status === 401) {
+                const [profileResponse, usersResponse, conversationsResponse] = await Promise.all([
+                    fetch("/api/users/profile", options),
+                    fetch("/api/users", options),
+                    fetch("/api/conversations", options),
+                ]);
+
+                if (profileResponse.status === 401 || usersResponse.status === 401 || conversationsResponse.status === 401) {
                     navigate("/", { replace: true });
                     return;
                 }
@@ -98,34 +104,11 @@ function Chat() {
 
                 const profileData = await profileResponse.json();
 
-                const usersResponse = await fetch("/api/users", {
-                    credentials: "include",
-                    signal: controller.signal,
-                });
-
-                if (usersResponse.status === 401) {
-                    navigate("/", { replace: true });
-                    return;
-                }
-
                 if (!usersResponse.ok) {
                     throw new Error("Could not load users");
                 }
 
                 const usersData = await usersResponse.json();
-
-                const conversationsResponse = await fetch(
-                    "/api/conversations",
-                    {
-                        credentials: "include",
-                        signal: controller.signal,
-                    }
-                );
-
-                if (conversationsResponse.status === 401) {
-                    navigate("/", { replace: true });
-                    return;
-                }
 
                 if (!conversationsResponse.ok) {
                     throw new Error("Could not load conversation previews");

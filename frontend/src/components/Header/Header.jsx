@@ -48,12 +48,16 @@ function MenuItem({ item, items }) {
     );
 }
 
-function Header() {
-    const [items, setItems] = useState([]);
-    const [loading, setLoading] = useState(true);
+function Header({ initialItems = null }) {
+    const [items, setItems] = useState(initialItems || []);
+    const [loading, setLoading] = useState(initialItems === null);
     const [error, setError] = useState("");
 
     useEffect(() => {
+        if (initialItems !== null) {
+            return;
+        }
+
         const controller = new AbortController();
 
         async function loadMenu() {
@@ -86,7 +90,7 @@ function Header() {
         loadMenu();
 
         return () => controller.abort();
-    }, []);
+    }, [initialItems]);
 
     const mainItems = items
         .filter((item) => item.parent_id === null)
