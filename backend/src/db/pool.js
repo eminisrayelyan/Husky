@@ -1,7 +1,6 @@
 import "dotenv/config";
 import pg from "pg";
 
-// Share a small pool between Prisma and the session store.
 const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL,
     max: 5,

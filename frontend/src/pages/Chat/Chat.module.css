@@ -92,6 +92,7 @@
 
 .contactText {
   flex: 1;
+  min-width: 0;
 }
 
 .contactName,
@@ -109,11 +110,16 @@
   margin-top: 2px;
   color: #b3b3b3;
   font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .badge {
-  width: 44px;
-  padding: 6px 18px;
+  flex-shrink: 0;
+  min-width: 36px;
+  padding: 6px 10px;
+  text-align: center;
   border-radius: 20px;
   background: #b14ee0;
   color: #fff;

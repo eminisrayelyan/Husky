@@ -113,4 +113,52 @@ async function getMessages(userId, conversationId) {
     }));
 }
 
-export { sendMessage, getMessages };
+async function markMessagesRead(userId, conversationId, lastMessageId) {
+    let chatId;
+    let messageId;
+
+    try {
+        if (typeof lastMessageId !== "string" || !/^\d+$/.test(lastMessageId)) {
+            throw new Error();
+        }
+        chatId = BigInt(conversationId);
+        messageId = BigInt(lastMessageId);
+        if (chatId <= 0n || messageId <= 0n ||
+            chatId > 9223372036854775807n || messageId > 9223372036854775807n) {
+            throw new Error();
+        }
+    } catch {
+        const error = new Error("Invalid conversation or message ID");
+        error.status = 400;
+        throw error;
+    }
+
+    const currentUserId = BigInt(userId);
+    const conversation = await prisma.conversations.findFirst({
+        where: {
+            id: chatId,
+            OR: [{ user_one_id: currentUserId }, { user_two_id: currentUserId }],
+        },
+    });
+
+    if (!conversation) {
+        const error = new Error("Conversation not found");
+        error.status = 404;
+        throw error;
+    }
+
+    const incoming = {
+        conversation_id: chatId,
+        sender_id: { not: currentUserId },
+        read_at: null,
+    };
+
+    await prisma.messages.updateMany({
+        where: { ...incoming, id: { lte: messageId } },
+        data: { read_at: new Date() },
+    });
+
+    return prisma.messages.count({ where: incoming });
+}
+
+export { sendMessage, getMessages, markMessagesRead };

@@ -1,4 +1,4 @@
-import { sendMessage, getMessages, } from "../services/message.service.js";
+import { sendMessage, getMessages, markMessagesRead } from "../services/message.service.js";
 
 async function sendMessageController(req, res, next) {
     try {
@@ -38,4 +38,17 @@ async function getMessagesController(req, res, next) {
     }
 }
 
-export { sendMessageController, getMessagesController };
+async function markMessagesReadController(req, res, next) {
+    try {
+        const unreadCount = await markMessagesRead(
+            req.session.userId,
+            req.params.conversationId,
+            req.body?.lastMessageId
+        );
+        return res.json({ unread_count: unreadCount });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export { sendMessageController, getMessagesController, markMessagesReadController };

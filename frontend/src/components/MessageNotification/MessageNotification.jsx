@@ -31,7 +31,6 @@ function MessageNotification({ notification, onClose }) {
                 type="button"
                 className={styles.close}
                 onClick={onClose}
-                aria-label="Close notification"
             >
                 ×
             </button>

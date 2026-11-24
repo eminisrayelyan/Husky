@@ -3,25 +3,43 @@ import { Link, useNavigate } from "react-router-dom";
 import arrowIcon from "../../assets/arrow.png";
 import styles from "./EditMenu.module.css";
 
-function formatItem(item) {
-    return {
-        ...item,
-        parentId: item.parent_id,
-    };
-}
+function wouldCreateCycle(items, itemId, parentId) {
+    let parent = items.find((item) => item.id === parentId);
 
-function isInside(items, itemId, parentId) {
-    let item = items.find((item) => item.id === itemId);
-
-    while (item) {
-        if (item.id === parentId) {
+    while (parent) {
+        if (parent.id === itemId) {
             return true;
         }
 
-        item = items.find((parent) => parent.id === item.parentId);
+        parent = items.find((item) => item.id === parent.parent_id);
     }
 
     return false;
+}
+
+function getMovedItems(items, itemId, parentId, beforeId) {
+    const draggedItem = items.find((item) => item.id === itemId);
+
+    if (!draggedItem) {
+        return null;
+    }
+
+    const updatedItems = items.filter((item) => item.id !== itemId);
+    const movedItem = { ...draggedItem, parent_id: parentId };
+
+    if (beforeId === null) {
+        updatedItems.push(movedItem);
+        return updatedItems;
+    }
+
+    const index = updatedItems.findIndex((item) => item.id === beforeId);
+
+    if (index === -1) {
+        return null;
+    }
+
+    updatedItems.splice(index, 0, movedItem);
+    return updatedItems;
 }
 
 function MenuList({
@@ -35,7 +53,7 @@ function MenuList({
     onRemove,
 }) {
     const currentItems = items.filter(
-        (item) => item.parentId === parentId
+        (item) => item.parent_id === parentId
     );
 
     function allowDrop(event) {
@@ -72,13 +90,16 @@ function MenuList({
 
         if (mouseX > row.width * 0.7) {
             onMove(item.id);
-        } else if (mouseY < row.height / 2) {
-            onMove(parentId, item.id);
-        } else {
-            const nextItem = currentItems[index + 1];
-
-            onMove(parentId, nextItem?.id || null);
+            return;
         }
+
+        if (mouseY < row.height / 2) {
+            onMove(parentId, item.id);
+            return;
+        }
+
+        const nextItem = currentItems[index + 1];
+        onMove(parentId, nextItem?.id || null);
     }
 
     return (
@@ -91,7 +112,7 @@ function MenuList({
         >
             {currentItems.map((item, index) => {
                 const hasChildren = items.some(
-                    (child) => child.parentId === item.id
+                    (child) => child.parent_id === item.id
                 );
 
                 return (
@@ -215,7 +236,7 @@ function EditMenu() {
                 const data = await response.json();
 
                 if (!controller.signal.aborted) {
-                    setMenuItems(data.items.map(formatItem));
+                    setMenuItems(data.items);
                 }
             } catch (error) {
                 if (!controller.signal.aborted) {
@@ -234,7 +255,9 @@ function EditMenu() {
     }, [navigate]);
 
     function handleEdit(item) {
-        if (busy) return;
+        if (busy) {
+            return;
+        }
 
         setEditingId(item.id);
         setName(item.name);
@@ -251,10 +274,21 @@ function EditMenu() {
         setError("");
     }
 
+    function handleNameChange(event) {
+        const value = event.target.value;
+        setName(value);
+
+        if (value.trim()) {
+            setNameError("");
+        }
+    }
+
     async function handleSubmit(event) {
         event.preventDefault();
 
-        if (busy) return;
+        if (busy) {
+            return;
+        }
 
         if (!name.trim()) {
             setNameError("Name is required");
@@ -294,7 +328,7 @@ function EditMenu() {
                 );
             }
 
-            const savedItem = formatItem(data.item);
+            const savedItem = data.item;
 
             if (editingId) {
                 setMenuItems((previous) =>
@@ -315,7 +349,9 @@ function EditMenu() {
     }
 
     async function handleRemove(itemId) {
-        if (busy) return;
+        if (busy) {
+            return;
+        }
 
         setDeleting(true);
         setError("");
@@ -363,44 +399,27 @@ function EditMenu() {
     }
 
     async function handleMove(parentId, beforeId = null) {
-        if (busy || !draggedId) return;
+        if (busy || !draggedId) {
+            return;
+        }
 
         if (
             draggedId === beforeId ||
-            isInside(menuItems, parentId, draggedId)
+            wouldCreateCycle(menuItems, draggedId, parentId)
         ) {
             setDraggedId(null);
             return;
         }
 
-        const draggedItem = menuItems.find(
-            (item) => item.id === draggedId
+        const updatedItems = getMovedItems(
+            menuItems, draggedId, parentId, beforeId
         );
 
-        if (!draggedItem) return;
+        if (!updatedItems) {
+            return;
+        }
 
         const previousItems = menuItems;
-
-        const updatedItems = menuItems.filter(
-            (item) => item.id !== draggedId
-        );
-
-        const movedItem = {
-            ...draggedItem,
-            parentId,
-        };
-
-        if (beforeId === null) {
-            updatedItems.push(movedItem);
-        } else {
-            const index = updatedItems.findIndex(
-                (item) => item.id === beforeId
-            );
-
-            if (index === -1) return;
-
-            updatedItems.splice(index, 0, movedItem);
-        }
 
         setMenuItems(updatedItems);
         setDraggedId(null);
@@ -417,7 +436,7 @@ function EditMenu() {
                 body: JSON.stringify({
                     items: updatedItems.map((item) => ({
                         id: item.id,
-                        parent_id: item.parentId,
+                        parent_id: item.parent_id,
                     })),
                 }),
             });
@@ -435,7 +454,7 @@ function EditMenu() {
                 );
             }
 
-            setMenuItems(data.items.map(formatItem));
+            setMenuItems(data.items);
         } catch (error) {
             setMenuItems(previousItems);
             setError(error.message);
@@ -468,12 +487,7 @@ function EditMenu() {
                             type="text"
                             value={name}
                             disabled={busy}
-                            onChange={(event) => {
-                                setName(event.target.value);
-                                if (event.target.value.trim()) {
-                                    setNameError("");
-                                }
-                            }}
+                            onChange={handleNameChange}
                             aria-invalid={Boolean(nameError)}
                             aria-describedby={nameError ? "menu-name-error" : undefined}
                             required

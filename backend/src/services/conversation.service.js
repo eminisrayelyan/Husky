@@ -89,6 +89,13 @@ async function getConversations(userId) {
         },
         select: {
             id: true,
+            _count: {
+                select: {
+                    messages: {
+                        where: { sender_id: { not: currentUserId }, read_at: null },
+                    },
+                },
+            },
             users_conversations_user_one_idTousers: {
                 select: userFields,
             },
@@ -131,6 +138,7 @@ async function getConversations(userId) {
 
         return {
             id: conversation.id.toString(),
+            unread_count: conversation._count.messages,
             other_user: {
                 id: otherUser.id.toString(),
                 first_name: otherUser.first_name,

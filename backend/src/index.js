@@ -6,19 +6,30 @@ import sessionMiddleware from "./middleware/session.js";
 const PORT = process.env.PORT || 3000;
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-function isAllowedOrigin(origin) {
-    if (origin === frontendUrl) return true;
+const allowedOrigins = [frontendUrl];
 
-    // Vite can use another local port when its default port is busy.
-    return process.env.NODE_ENV !== "production" &&
-        /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin || "");
+if (process.env.NODE_ENV !== "production") {
+    allowedOrigins.push(
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+    );
+}
+
+function isAllowedOrigin(origin) {
+    if (!origin) {
+        return true;
+    }
+
+    return allowedOrigins.includes(origin);
 }
 
 const server = createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+        origin: allowedOrigins,
         credentials: true,
     },
     allowRequest: (req, callback) => {
@@ -40,9 +51,10 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
     const userId = socket.request.session.userId;
+    const sessionId = socket.request.session.id;
 
     socket.join(`user:${userId}`);
-    socket.join(`session:${socket.request.session.id}`);
+    socket.join(`session:${sessionId}`);
 });
 
 app.set("io", io);

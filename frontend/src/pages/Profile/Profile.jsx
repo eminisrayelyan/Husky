@@ -2,9 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../../components/Header/Header.jsx";
 import styles from "./Profile.module.css";
-import frame from "../../assets/frame.png";
-import cam from "../../assets/camera.png";
+import defaultPhoto from "../../assets/frame.png";
+import cameraIcon from "../../assets/camera.png";
 import ImageCropper from "./ImageCropper.jsx";
+
+const profileFields = [
+    { name: "first_name", label: "First Name", id: "first-name", type: "text", autoComplete: "given-name", required: true },
+    { name: "last_name", label: "Last Name", id: "last-name", type: "text", autoComplete: "last-name", required: true },
+    { name: "email", label: "Email", id: "profile-email", type: "email", autoComplete: "email", required: true },
+    { name: "phone_number", label: "Phone", id: "phone", type: "tel", autoComplete: "tel", required: false },
+];
 
 function Profile() {
     const navigate = useNavigate();
@@ -105,14 +112,14 @@ function Profile() {
     }
 
     function handleChange(event) {
-        const { name, value } = event.target;
+        const { name, value, validity } = event.target;
 
         setFormData((previous) => ({
             ...previous,
             [name]: value,
         }));
 
-        if (name === "email" && value.trim() && event.target.validity.valid) {
+        if (name === "email" && value.trim() && validity.valid) {
             setEmailError("");
         }
     }
@@ -123,9 +130,10 @@ function Profile() {
 
         if (!event.currentTarget.value.trim()) {
             setEmailError("Email is required");
-        } else {
-            setEmailError("Enter a valid email address");
+            return;
         }
+
+        setEmailError("Enter a valid email address");
     }
 
     function handlePhotoChange(event) {
@@ -157,6 +165,7 @@ function Profile() {
         if (uploadingPhoto) {
             return;
         }
+
         const uploadData = new FormData();
         uploadData.append("photo", blob, "profile.png");
 
@@ -259,6 +268,11 @@ function Profile() {
         setIsEditing(false);
     }
 
+    function handlePhotoCancel() {
+        setPhotoFile(null);
+        setPhotoError("");
+    }
+
     async function handleLogout() {
         if (signingOut) {
             return;
@@ -308,7 +322,7 @@ function Profile() {
                     <div className={styles["profile-content"]}>
                         <div className={styles["photo-wrapper"]}>
                             <img
-                                src={user.photo_url || frame}
+                                src={user.photo_url || defaultPhoto}
                                 alt="Profile"
                                 className={styles["profile-photo"]}
                             />
@@ -328,7 +342,7 @@ function Profile() {
                                 onClick={() => photoInputRef.current.click()}
                                 disabled={uploadingPhoto}
                             >
-                                <img src={cam} alt="Change profile photo" />
+                                <img src={cameraIcon} alt="Change profile photo" />
                             </button>
                         </div>
 
@@ -339,10 +353,7 @@ function Profile() {
                                 file={photoFile}
                                 uploading={uploadingPhoto}
                                 onSave={handlePhotoSave}
-                                onCancel={() => {
-                                    setPhotoFile(null);
-                                    setPhotoError("");
-                                }}
+                                onCancel={handlePhotoCancel}
                             />
                         )}
                         {photoError && (
@@ -357,72 +368,33 @@ function Profile() {
                                 className={styles["edit-form"]}
                                 onSubmit={handleSave}
                             >
-                                <div className={styles["input-field"]}>
-                                    <label htmlFor="first-name">First Name</label>
-                                    <input
-                                        id="first-name"
-                                        name="first_name"
-                                        type="text"
-                                        autoComplete="given-name"
-                                        value={formData.first_name}
-                                        onChange={handleChange}
-                                        disabled={saving}
-                                        required
-                                    />
-                                </div>
+                                {profileFields.map((field) => (
+                                    <div key={field.name} className={styles["input-field"]}>
+                                        <label htmlFor={field.id}>{field.label}</label>
+                                        <input
+                                            id={field.id}
+                                            name={field.name}
+                                            type={field.type}
+                                            autoComplete={field.autoComplete}
+                                            value={formData[field.name]}
+                                            onChange={handleChange}
+                                            disabled={saving}
+                                            required={field.required}
+                                            onInvalid={field.name === "email" ? handleEmailInvalid : undefined}
+                                            className={field.name === "email" && emailError ? styles["input-error"] : undefined}
+                                        />
 
-                                <div className={styles["input-field"]}>
-                                    <label htmlFor="last-name">Last Name</label>
-                                    <input
-                                        id="last-name"
-                                        name="last_name"
-                                        type="text"
-                                        autoComplete="last-name"
-                                        value={formData.last_name}
-                                        onChange={handleChange}
-                                        disabled={saving}
-                                        required
-                                    />
-                                </div>
-
-                                <div className={styles["input-field"]}>
-                                    <label htmlFor="profile-email">Email</label>
-                                    <input
-                                        id="profile-email"
-                                        name="email"
-                                        type="email"
-                                        autoComplete="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        disabled={saving}
-                                        onInvalid={handleEmailInvalid}
-                                        className={emailError ? styles["input-error"] : ""}
-                                        required
-                                    />
-
-                                    {emailError && (
-                                        <p
-                                            id="profile-email-error"
-                                            className={styles["field-error"]}
-                                            role="alert"
-                                        >
-                                            {emailError}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className={styles["input-field"]}>
-                                    <label htmlFor="phone">Phone</label>
-                                    <input
-                                        id="phone"
-                                        name="phone_number"
-                                        type="tel"
-                                        autoComplete="tel"
-                                        value={formData.phone_number}
-                                        onChange={handleChange}
-                                        disabled={saving}
-                                    />
-                                </div>
+                                        {field.name === "email" && emailError && (
+                                            <p
+                                                id="profile-email-error"
+                                                className={styles["field-error"]}
+                                                role="alert"
+                                            >
+                                                {emailError}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
                                 {saveError && <p role="alert">{saveError}</p>}
 
                                 <div className={styles["edit-buttons"]}>
@@ -447,25 +419,16 @@ function Profile() {
                         ) : (
                             <>
                                 <dl className={styles.details}>
-                                    <div className={styles.field}>
-                                        <dt>First Name</dt>
-                                        <dd>{user.first_name}</dd>
-                                    </div>
-
-                                    <div className={styles.field}>
-                                        <dt>Last Name</dt>
-                                        <dd>{user.last_name}</dd>
-                                    </div>
-
-                                    <div className={styles.field}>
-                                        <dt>Email</dt>
-                                        <dd>{user.email}</dd>
-                                    </div>
-
-                                    <div className={styles.field}>
-                                        <dt>Phone</dt>
-                                        <dd>{user.phone_number || "Not added"}</dd>
-                                    </div>
+                                    {profileFields.map((field) => (
+                                        <div key={field.name} className={styles.field}>
+                                            <dt>{field.label}</dt>
+                                            <dd>
+                                                {field.name === "phone_number"
+                                                    ? user.phone_number || "Not added"
+                                                    : user[field.name]}
+                                            </dd>
+                                        </div>
+                                    ))}
                                 </dl>
 
                                 <button

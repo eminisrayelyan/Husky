@@ -5,6 +5,10 @@ import socket from "../../socket.js";
 import styles from "./Chat.module.css";
 import searchIcon from "../../assets/search.png";
 
+function getFullName(user) {
+    return `${user.first_name} ${user.last_name}`;
+}
+
 function getInitials(user) {
     const first = user?.first_name?.[0] || "";
     const last = user?.last_name?.[0] || "";
@@ -24,9 +28,53 @@ function Avatar({ user }) {
     );
 }
 
+function Contact({ user, selected, preview, unreadCount, onSelect }) {
+    function handleKeyDown(event) {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onSelect(user);
+        }
+    }
+
+    return (
+        <li
+            className={selected ? `${styles.contact} ${styles.selected}` : styles.contact}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelect(user)}
+            onKeyDown={handleKeyDown}
+        >
+            <Avatar user={user} />
+
+            <div className={styles.contactText}>
+                <span className={styles.contactName}>{getFullName(user)}</span>
+                <span className={styles.preview}>{preview || ""}</span>
+            </div>
+
+            {unreadCount > 0 && (
+                <span className={styles.badge} aria-label={`${unreadCount} unread messages`}>
+                    {unreadCount}
+                </span>
+            )}
+        </li>
+    );
+}
+
+function ChatMessage({ message, isMine, currentUser, selectedUser }) {
+    return (
+        <li className={isMine ? `${styles.message} ${styles.outgoing}` : styles.message}>
+            {!isMine && <Avatar user={selectedUser} />}
+            <p className={styles.bubble}>{message.body}</p>
+            {isMine && <Avatar user={currentUser} />}
+        </li>
+    );
+}
+
 function Chat() {
     const navigate = useNavigate();
     const threadRef = useRef(null);
+    const pendingUnreadRef = useRef([]);
+    const unreadLoadedRef = useRef(false);
 
     const [currentUser, setCurrentUser] = useState(null);
     const [users, setUsers] = useState([]);
@@ -35,6 +83,7 @@ function Chat() {
 
     const [messages, setMessages] = useState([]);
     const [lastMessages, setLastMessages] = useState({});
+    const [unreadCounts, setUnreadCounts] = useState({});
 
     const [search, setSearch] = useState("");
     const [message, setMessage] = useState("");
@@ -56,12 +105,23 @@ function Chat() {
         function handleNewMessage(data) {
             const newMessage = data.message;
 
+            if (!unreadLoadedRef.current) {
+                pendingUnreadRef.current.push(newMessage);
+            }
+
+            setUnreadCounts((previous) => ({
+                ...previous,
+                [newMessage.sender_id]: (previous[newMessage.sender_id] || 0) + 1,
+            }));
+
             setLastMessages((previous) => ({
                 ...previous,
                 [newMessage.sender_id]: newMessage.body,
             }));
 
-            if (newMessage.conversation_id !== conversationId) return;
+            if (newMessage.conversation_id !== conversationId) {
+                return;
+            }
 
             setMessages((previous) => {
                 if (previous.some((item) => item.id === newMessage.id)) {
@@ -76,6 +136,57 @@ function Chat() {
 
         return () => socket.off("new-message", handleNewMessage);
     }, [conversationId]);
+
+    useEffect(() => {
+        if (!conversationId || !selectedUser || opening || messages.length === 0) {
+            return;
+        }
+
+        let cancelled = false;
+
+        async function markAsRead() {
+            if (document.hidden) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/conversations/${conversationId}/read`, {
+                    method: "PATCH",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ lastMessageId: messages[messages.length - 1].id }),
+                });
+
+                if (response.status === 401) {
+                    navigate("/", { replace: true });
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error("Could not mark messages as read");
+                }
+
+                const data = await response.json();
+                if (!cancelled) {
+                    setUnreadCounts((previous) => ({
+                        ...previous,
+                        [selectedUser.id]: data.unread_count,
+                    }));
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setError(error.message);
+                }
+            }
+        }
+
+        markAsRead();
+        document.addEventListener("visibilitychange", markAsRead);
+
+        return () => {
+            cancelled = true;
+            document.removeEventListener("visibilitychange", markAsRead);
+        };
+    }, [conversationId, selectedUser, opening, messages, navigate]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -118,16 +229,31 @@ function Chat() {
                     await conversationsResponse.json();
 
                 const previews = {};
+                const counts = {};
+                const lastIds = {};
 
                 for (const conversation of conversationsData.conversations) {
-                    previews[conversation.other_user.id] =
-                        conversation.last_message?.body || "";
+                    const userId = conversation.other_user.id;
+                    previews[userId] = conversation.last_message?.body || "";
+                    counts[userId] = conversation.unread_count;
+                    lastIds[userId] = conversation.last_message?.id || "0";
                 }
 
-                if (controller.signal.aborted) return;
+                if (controller.signal.aborted) {
+                    return;
+                }
+
+                for (const message of pendingUnreadRef.current) {
+                    if (BigInt(message.id) > BigInt(lastIds[message.sender_id] || "0")) {
+                        counts[message.sender_id] = (counts[message.sender_id] || 0) + 1;
+                    }
+                }
+                pendingUnreadRef.current = [];
+                unreadLoadedRef.current = true;
 
                 setCurrentUser(profileData.user);
                 setUsers(usersData.users);
+                setUnreadCounts(counts);
                 setLastMessages((previous) => ({ ...previews, ...previous }));
             } catch (error) {
                 if (!controller.signal.aborted) {
@@ -146,7 +272,9 @@ function Chat() {
     }, [navigate]);
 
     async function handleSelectUser(user) {
-        if (opening || sending) return;
+        if (opening || sending) {
+            return;
+        }
 
         const previewBeforeLoading = lastMessages[user.id];
 
@@ -237,7 +365,9 @@ function Chat() {
 
         const body = message.trim();
 
-        if (!body || !conversationId || sending || opening) return;
+        if (!body || !conversationId || sending || opening) {
+            return;
+        }
 
         setSending(true);
         setError("");
@@ -284,12 +414,11 @@ function Chat() {
     }
 
     function handleShareAccountDetails() {
-        if (!currentUser) return;
+        if (!currentUser) {
+            return;
+        }
 
-        const fullName =
-            `${currentUser.first_name} ${currentUser.last_name}`;
-
-        const details = [fullName, currentUser.email];
+        const details = [getFullName(currentUser), currentUser.email];
 
         if (currentUser.phone_number) {
             details.push(currentUser.phone_number);
@@ -298,13 +427,12 @@ function Chat() {
         setMessage(details.join(", "));
     }
 
-    const filteredUsers = users.filter((user) => {
-        const fullName = `${user.first_name} ${user.last_name}`;
-
-        return fullName
+    const searchText = search.trim().toLowerCase();
+    const filteredUsers = users.filter((user) =>
+        getFullName(user)
             .toLowerCase()
-            .includes(search.trim().toLowerCase());
-    });
+            .includes(searchText)
+    );
 
     const composerDisabled = opening || sending || !conversationId;
 
@@ -338,38 +466,14 @@ function Chat() {
 
                         <ul className={styles.contacts}>
                             {filteredUsers.map((user) => (
-                                <li
+                                <Contact
                                     key={user.id}
-                                    className={
-                                        selectedUser?.id === user.id
-                                            ? `${styles.contact} ${styles.selected}`
-                                            : styles.contact
-                                    }
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => handleSelectUser(user)}
-                                    onKeyDown={(event) => {
-                                        if (
-                                            event.key === "Enter" ||
-                                            event.key === " "
-                                        ) {
-                                            event.preventDefault();
-                                            handleSelectUser(user);
-                                        }
-                                    }}
-                                >
-                                    <Avatar user={user} />
-
-                                    <div className={styles.contactText}>
-                                        <span className={styles.contactName}>
-                                            {user.first_name} {user.last_name}
-                                        </span>
-
-                                        <span className={styles.preview}>
-                                            {lastMessages[user.id] || ""}
-                                        </span>
-                                    </div>
-                                </li>
+                                    user={user}
+                                    selected={selectedUser?.id === user.id}
+                                    preview={lastMessages[user.id]}
+                                    unreadCount={unreadCounts[user.id]}
+                                    onSelect={handleSelectUser}
+                                />
                             ))}
 
                             {!loading &&
@@ -392,10 +496,7 @@ function Chat() {
                                 >
                                     <Avatar user={selectedUser} />
 
-                                    <h2>
-                                        {selectedUser.first_name}{" "}
-                                        {selectedUser.last_name}
-                                    </h2>
+                                    <h2>{getFullName(selectedUser)}</h2>
                                 </header>
 
                                 <ul className={styles.thread} ref={threadRef}>
@@ -409,37 +510,15 @@ function Chat() {
                                             <li>No messages yet.</li>
                                         )}
 
-                                    {messages.map((item) => {
-                                        const isMine =
-                                            item.sender_id === currentUser?.id;
-
-                                        return (
-                                            <li
-                                                key={item.id}
-                                                className={
-                                                    isMine
-                                                        ? `${styles.message} ${styles.outgoing}`
-                                                        : styles.message
-                                                }
-                                            >
-                                                {!isMine && (
-                                                    <Avatar
-                                                        user={selectedUser}
-                                                    />
-                                                )}
-
-                                                <p className={styles.bubble}>
-                                                    {item.body}
-                                                </p>
-
-                                                {isMine && (
-                                                    <Avatar
-                                                        user={currentUser}
-                                                    />
-                                                )}
-                                            </li>
-                                        );
-                                    })}
+                                    {messages.map((item) => (
+                                        <ChatMessage
+                                            key={item.id}
+                                            message={item}
+                                            isMine={item.sender_id === currentUser?.id}
+                                            currentUser={currentUser}
+                                            selectedUser={selectedUser}
+                                        />
+                                    ))}
                                 </ul>
 
                                 <form
