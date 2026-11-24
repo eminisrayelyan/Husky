@@ -2,6 +2,7 @@
   display: flex;
   align-items: center;
   min-height: 126px;
+  padding: 20px;
   background-color: #ffffff;
 }
 
@@ -14,17 +15,27 @@
   align-items: center;
   justify-content: space-evenly;
   flex-wrap: wrap;
+  gap: 20px;
   list-style: none;
 }
 
-.nav-list a {
+.nav-list a,
+.menuButton {
   color: #000000;
   font-size: 24px;
   font-weight: 600;
   text-decoration: none;
 }
 
-.nav-list a:hover {
+.menuButton {
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-list a:hover,
+.menuButton:hover {
   color: #b14ee0;
 }
 
@@ -85,4 +96,38 @@
 
 .edit-menu-btn:hover {
   background-color: #9d3acb;
+}
+
+@media (max-width: 768px) {
+  .nav-list {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .nav-list a,
+  .menuButton {
+    font-size: 18px;
+    overflow-wrap: anywhere;
+  }
+
+  .dropdown,
+  .dropdown .dropdown,
+  .menuItem:hover > .dropdown,
+  .menuItem:focus-within > .dropdown {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    margin-top: 12px;
+    padding: 0 0 0 16px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .edit-menu-btn {
+    width: 44px;
+    height: 44px;
+  }
 }

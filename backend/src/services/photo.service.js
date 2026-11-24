@@ -18,7 +18,6 @@ async function deleteFile(storageKey) {
 }
 
 async function uploadProfilePhoto(userId, file) {
-    // The upload middleware checks that a file exists and is under 2 MB.
     let imageBuffer;
 
     try {
@@ -49,7 +48,6 @@ async function uploadProfilePhoto(userId, file) {
         throw error;
     }
 
-    // Upload the new image.
     const id = BigInt(userId);
     const storageKey = `${id}/${randomUUID()}.webp`;
 
@@ -68,7 +66,6 @@ async function uploadProfilePhoto(userId, file) {
 
     try {
         await prisma.$transaction(async (tx) => {
-            // Prevent two uploads from updating this user at the same time.
             await tx.$queryRaw`
                 SELECT id FROM public.users
                 WHERE id = ${id}
@@ -87,13 +84,11 @@ async function uploadProfilePhoto(userId, file) {
 
                 oldStorageKey = photo.storage_key;
 
-                // Update the existing photo row.
                 await tx.photos.update({
                     where: { id: photo.id },
                     data: { storage_key: storageKey },
                 });
             } else {
-                // First upload: create a photo row.
                 const photo = await tx.photos.create({
                     data: { storage_key: storageKey },
                 });
@@ -109,7 +104,6 @@ async function uploadProfilePhoto(userId, file) {
         throw error;
     }
 
-    // Remove the old file after saving the new reference.
     if (oldStorageKey) {
         await deleteFile(oldStorageKey);
     }

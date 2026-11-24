@@ -264,3 +264,101 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+@media (max-width: 900px) {
+  .page {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .main {
+    flex: none;
+    padding: 16px;
+  }
+
+  .panel {
+    flex-direction: column;
+    min-width: 0;
+    border-radius: 20px;
+  }
+
+  .sidebar {
+    flex: none;
+    max-height: 280px;
+    border-right: none;
+    border-bottom: 1px solid #e2e2e2;
+  }
+
+  .sidebar h1 {
+    margin: 20px;
+    font-size: 20px;
+  }
+
+  .sidebar p {
+    margin-left: 20px;
+  }
+
+  .search {
+    margin: 0 20px 16px;
+  }
+
+  .contact {
+    gap: 12px;
+    padding: 0 20px;
+  }
+
+  .contactText {
+    min-width: 0;
+  }
+
+  .contactName,
+  .preview {
+    overflow: hidden;
+  }
+
+  .contactName {
+    font-size: 16px;
+  }
+
+  .conversation {
+    flex: none;
+    height: 65vh;
+    min-height: 400px;
+  }
+
+  .conversationHeader {
+    height: auto;
+    min-height: 80px;
+    padding: 16px;
+  }
+
+  .conversationHeader h2 {
+    min-width: 0;
+  }
+
+  .thread {
+    gap: 20px;
+    padding: 16px;
+  }
+
+  .message {
+    gap: 10px;
+  }
+
+  .bubble {
+    padding: 12px 16px;
+  }
+
+  .composer {
+    padding: 16px;
+  }
+
+  .composerRow {
+    padding-left: 12px;
+  }
+
+  .composerRow button {
+    width: 90px;
+    padding: 14px 12px;
+  }
+}

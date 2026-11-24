@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header/Header.jsx";
 import styles from "./Profile.module.css";
 import frame from "../../assets/frame.png";
 import cam from "../../assets/camera.png";
+import ImageCropper from "./ImageCropper.jsx";
 
 function Profile() {
     const navigate = useNavigate();
@@ -23,6 +24,7 @@ function Profile() {
 
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [photoError, setPhotoError] = useState("");
+    const [photoFile, setPhotoFile] = useState(null);
 
     const photoInputRef = useRef(null);
 
@@ -118,7 +120,7 @@ function Profile() {
         }
     }
 
-    async function handlePhotoChange(event) {
+    function handlePhotoChange(event) {
         const file = event.target.files[0];
         event.target.value = "";
 
@@ -140,10 +142,18 @@ function Profile() {
             return;
         }
 
+        setPhotoFile(file);
+    }
+
+    async function handlePhotoSave(blob) {
+        if (uploadingPhoto) {
+            return;
+        }
         const uploadData = new FormData();
-        uploadData.append("photo", file);
+        uploadData.append("photo", blob, "profile.png");
 
         setUploadingPhoto(true);
+        setPhotoError("");
 
         try {
             const response = await fetch("/api/users/profile/photo", {
@@ -168,6 +178,7 @@ function Profile() {
                 ...previous,
                 photo_url: data.photo_url,
             }));
+            setPhotoFile(null);
         } catch {
             setPhotoError("Could not connect to the server");
         } finally {
@@ -314,6 +325,18 @@ function Profile() {
                         </div>
 
                         {uploadingPhoto && <p>Uploading photo...</p>}
+                        {photoFile && (
+                            <ImageCropper
+                                key={photoFile.name + photoFile.lastModified}
+                                file={photoFile}
+                                uploading={uploadingPhoto}
+                                onSave={handlePhotoSave}
+                                onCancel={() => {
+                                    setPhotoFile(null);
+                                    setPhotoError("");
+                                }}
+                            />
+                        )}
                         {photoError && (
                             <p className={styles["photo-error"]} role="alert">
                                 <span className={styles["error-icon"]}>!</span>

@@ -211,3 +211,53 @@
   height: 14px;
   list-style: none;
 }
+
+@media (max-width: 900px) {
+  .page {
+    padding: 16px;
+  }
+
+  .panel {
+    flex-direction: column;
+    height: auto;
+    border-radius: 20px;
+  }
+
+  .sidebar,
+  .menu {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid #ededed;
+  }
+
+  .menu {
+    overflow-y: visible;
+  }
+
+  .row {
+    gap: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .itemName {
+    min-width: 0;
+  }
+
+  .editButton,
+  .removeButton {
+    flex-shrink: 0;
+  }
+
+  .childList {
+    padding-left: 12px;
+  }
+
+  .menuList {
+    gap: 16px;
+  }
+}

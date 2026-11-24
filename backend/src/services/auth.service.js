@@ -16,6 +16,7 @@ async function signUp({ first_name, last_name, email, password }) {
     }
 
     const password_hash = await argon2.hash(password);
+    
     try {
         const user = await prisma.users.create({
             data: {
