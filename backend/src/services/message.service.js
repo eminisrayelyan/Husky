@@ -40,14 +40,23 @@ async function sendMessage(userId, conversationId, { body }) {
             sender_id: senderId,
             body,
         },
+        include: {
+            users: { select: { first_name: true, last_name: true } },
+        },
     });
 
     return {
-        id: message.id.toString(),
-        conversation_id: message.conversation_id.toString(),
-        sender_id: message.sender_id.toString(),
-        body: message.body,
-        created_at: message.created_at,
+        message: {
+            id: message.id.toString(),
+            conversation_id: message.conversation_id.toString(),
+            sender_id: message.sender_id.toString(),
+            body: message.body,
+            created_at: message.created_at,
+        },
+        recipientId: (conversation.user_one_id === senderId
+            ? conversation.user_two_id
+            : conversation.user_one_id).toString(),
+        senderName: `${message.users.first_name} ${message.users.last_name}`,
     };
 }
 

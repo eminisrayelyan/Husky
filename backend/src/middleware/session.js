@@ -1,12 +1,13 @@
 import "dotenv/config";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import pool from "../db/pool.js";
 
 const PgStore = connectPgSimple(session);
 
 const sessionMiddleware = session({
     store: new PgStore({
-        conString: process.env.DATABASE_URL,
+        pool,
         schemaName: "private",
         createTableIfMissing: true,
     }),
