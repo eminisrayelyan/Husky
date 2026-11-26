@@ -2,9 +2,9 @@
 
 ## Password reset emails
 
-The backend sends reset links through Gmail. Turn on 2-Step Verification for the sending account and [create a Google App Password](https://support.google.com/accounts/answer/185833).
+The backend sends reset links through the Gmail API over HTTPS. Enable the Gmail API in Google Cloud and authorize the sender account with the `gmail.send` scope and offline access to obtain a refresh token.
 
-Set `GMAIL_USER` to the sender's Gmail address and `GMAIL_APP_PASSWORD` to the generated app password in `backend/.env`. Set `CLIENT_URL` to the frontend URL where users open the link. Restart the backend after editing these values.
+Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REFRESH_TOKEN` in the backend environment. Set `GMAIL_USER` to the authorized sender address and `CLIENT_URL` to the frontend URL. Use `backend/.env` locally and the backend service's Environment settings on Render. Restart or redeploy after changing the values.
 
 
 ## Getting started
