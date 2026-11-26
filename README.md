@@ -1,5 +1,10 @@
 # Husky 2026
 
+## Password reset emails
+
+The backend sends reset links through Gmail. Turn on 2-Step Verification for the sending account and [create a Google App Password](https://support.google.com/accounts/answer/185833).
+
+Set `GMAIL_USER` to the sender's Gmail address and `GMAIL_APP_PASSWORD` to the generated app password in `backend/.env`. Set `CLIENT_URL` to the frontend URL where users open the link. Restart the backend after editing these values.
 
 
 ## Getting started
