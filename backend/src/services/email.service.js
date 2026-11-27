@@ -1,7 +1,6 @@
 import "dotenv/config";
 import nodemailer from "nodemailer";
 
-// Nodemailer formats the email. Gmail delivers it over HTTPS.
 const mailer = nodemailer.createTransport({ streamTransport: true, buffer: true });
 
 async function getAccessToken() {
@@ -29,10 +28,15 @@ async function sendResetPasswordEmail(email, token) {
     resetLink.searchParams.set("token", token);
 
     const { message } = await mailer.sendMail({
-        from: process.env.GMAIL_USER,
+        from: { name: "Husky", address: process.env.GMAIL_USER },
         to: email,
-        subject: "Reset your password",
-        text: resetLink.toString(),
+        subject: "Reset your Husky password",
+        text: [
+            "We received a request to reset your Husky password.",
+            "Use this link to choose a new password:",
+            resetLink.toString(),
+            "If you didn't request a password reset, you can ignore this email.",
+        ].join("\n\n"),
     });
 
     const accessToken = await getAccessToken();
