@@ -62,8 +62,8 @@ async function checkResetTokenController(req, res, next) {
         if (typeof req.body?.token !== "string") {
             return res.status(400).json({ message: "Reset link is invalid or expired" });
         }
-        await checkResetToken(req.body.token);
-        return res.sendStatus(204);
+        const expiresInMs = await checkResetToken(req.body.token);
+        return res.json({ expiresInMs });
     } catch (error) {
         next(error);
     }

@@ -114,6 +114,7 @@ async function findResetUser(tokenHash) {
         },
         select: {
             id: true,
+            reset_token_expires_at: true,
             first_name: true,
             last_name: true,
             email: true,
@@ -130,7 +131,8 @@ async function findResetUser(tokenHash) {
 }
 
 async function checkResetToken(token) {
-    await findResetUser(hashResetToken(token));
+    const user = await findResetUser(hashResetToken(token));
+    return Math.max(0, user.reset_token_expires_at.getTime() - Date.now());
 }
 
 async function resetPassword({ token, password }) {

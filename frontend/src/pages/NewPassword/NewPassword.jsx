@@ -14,6 +14,7 @@ function NewPassword() {
     useEffect(() => {
         if (!token) return;
         const controller = new AbortController();
+        let expiryTimer;
 
         async function checkLink() {
             let status;
@@ -24,9 +25,19 @@ function NewPassword() {
                     body: JSON.stringify({ token }),
                     signal: controller.signal,
                 });
-                if (response.ok) status = "valid";
-                else if (response.status === 400) status = "invalid";
-                else status = "error";
+                if (response.ok) {
+                    const { expiresInMs } = await response.json();
+                    if (controller.signal.aborted) return;
+                    status = "invalid";
+                    if (expiresInMs > 0) {
+                        status = "valid";
+                        expiryTimer = setTimeout(() => {
+                            setCheckedLink({ token, status: "invalid" });
+                        }, expiresInMs);
+                    }
+                } else {
+                    status = response.status === 400 ? "invalid" : "error";
+                }
             } catch {
                 status = "error";
             }
@@ -34,7 +45,10 @@ function NewPassword() {
         }
 
         checkLink();
-        return () => controller.abort();
+        return () => {
+            controller.abort();
+            clearTimeout(expiryTimer);
+        };
     }, [token]);
 
     async function handleSubmit(event) {
