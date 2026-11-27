@@ -1,4 +1,4 @@
-import { signUp, signIn, forgotPassword, resetPassword } from "../services/auth.service.js";
+import { signUp, signIn, forgotPassword, checkResetToken, resetPassword } from "../services/auth.service.js";
 import { getMenu } from "../services/menu.service.js";
 
 async function signUpController(req, res, next) {
@@ -57,6 +57,18 @@ async function forgotPasswordController(req, res, next) {
     }
 }
 
+async function checkResetTokenController(req, res, next) {
+    try {
+        if (typeof req.body?.token !== "string") {
+            return res.status(400).json({ message: "Reset link is invalid or expired" });
+        }
+        await checkResetToken(req.body.token);
+        return res.sendStatus(204);
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function resetPasswordController(req, res, next) {
     try {
         const user = await resetPassword(res.locals.resetPasswordData);
@@ -98,4 +110,4 @@ function signOutController(req, res, next) {
     });
 }
 
-export { signUpController, signInController, signOutController, forgotPasswordController, resetPasswordController };
+export { signUpController, signInController, signOutController, forgotPasswordController, checkResetTokenController, resetPasswordController };

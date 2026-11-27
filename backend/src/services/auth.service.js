@@ -82,11 +82,7 @@ async function forgotPassword({ email }) {
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-
-    const tokenHash = crypto
-        .createHash("sha256")
-        .update(token)
-        .digest("hex");
+    const tokenHash = hashResetToken(token);
 
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
@@ -101,12 +97,14 @@ async function forgotPassword({ email }) {
     await sendResetPasswordEmail(user.email, token);
 }
 
-async function resetPassword({ token, password }) {
-    const tokenHash = crypto
+function hashResetToken(token) {
+    return crypto
         .createHash("sha256")
         .update(token)
         .digest("hex");
+}
 
+async function findResetUser(tokenHash) {
     const user = await prisma.users.findFirst({
         where: {
             reset_token_hash: tokenHash,
@@ -128,6 +126,16 @@ async function resetPassword({ token, password }) {
         throw error;
     }
 
+    return user;
+}
+
+async function checkResetToken(token) {
+    await findResetUser(hashResetToken(token));
+}
+
+async function resetPassword({ token, password }) {
+    const tokenHash = hashResetToken(token);
+    const user = await findResetUser(tokenHash);
     const passwordHash = await argon2.hash(password);
 
     const result = await prisma.users.updateMany({
@@ -157,4 +165,4 @@ async function resetPassword({ token, password }) {
     };
 }
 
-export { signUp, signIn, forgotPassword, resetPassword};
+export { signUp, signIn, forgotPassword, checkResetToken, resetPassword };

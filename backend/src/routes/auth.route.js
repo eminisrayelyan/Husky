@@ -9,6 +9,7 @@ import {
     signInController,
     signOutController,
     forgotPasswordController,
+    checkResetTokenController,
     resetPasswordController
 } from "../controllers/auth.controller.js";
 
@@ -17,6 +18,7 @@ const router = Router();
 router.post("/sign-up", signUpLimiter, validateSignUp, signUpController);
 router.post("/sign-in", validateSignIn, signInController);
 router.post("/forgot-password", validateForgotPassword, forgotPasswordController);
+router.post("/check-reset-token", checkResetTokenController);
 router.post("/reset-password", validateResetPassword, resetPasswordController);
 router.post("/sign-out", signOutController);
 
