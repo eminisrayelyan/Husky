@@ -61,7 +61,7 @@ function NewPassword() {
                 return;
             }
 
-            navigate("/", { replace: true });
+            navigate("/profile", { replace: true });
         } catch {
             setError("Could not connect to the server");
         } finally {

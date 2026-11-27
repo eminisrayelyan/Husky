@@ -17,30 +17,27 @@ async function signUpController(req, res, next) {
     }
 }
 
+function startSession(req, userId, callback) {
+    req.session.regenerate((error) => {
+        if (error) return callback(error);
+
+        req.session.userId = userId;
+        req.session.save(callback);
+    });
+}
+
 async function signInController(req, res, next) {
     try {
         const user = await signIn(res.locals.signInData);
         const menuItems = await getMenu(user.id);
 
-        req.session.regenerate((error) => {
-            if (error) {
-                next(error);
-                return;
-            }
+        startSession(req, user.id, (error) => {
+            if (error) return next(error);
 
-            req.session.userId = user.id;
-
-            req.session.save((error) => {
-                if (error) {
-                    next(error);
-                    return;
-                }
-
-                res.status(200).json({
-                    message: "Signed in successfully",
-                    user,
-                    menuItems,
-                });
+            res.status(200).json({
+                message: "Signed in successfully",
+                user,
+                menuItems,
             });
         });
     } catch (error) {
@@ -62,10 +59,12 @@ async function forgotPasswordController(req, res, next) {
 
 async function resetPasswordController(req, res, next) {
     try {
-        await resetPassword(res.locals.resetPasswordData);
+        const user = await resetPassword(res.locals.resetPasswordData);
 
-        return res.status(200).json({
-            message: "Password reset successfully",
+        startSession(req, user.id, (error) => {
+            if (error) return next(error);
+
+            res.status(200).json({ message: "Password reset successfully" });
         });
     } catch (error) {
         next(error);
